@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Calculadora RETIE</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#003366">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RETIE App">
+    
+    <!-- Link to Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/616/616494.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/616/616494.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --retie-blue: #003366;
+            --retie-yellow: #FFCC00;
+        }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background-color: #f3f4f6;
+            overscroll-behavior-y: none; 
+        }
+        .cable-anim { animation: sway 3s infinite ease-in-out; }
+        @keyframes sway { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+    </style>
+</head>
+<body class="text-gray-800 select-none pb-20">
+
+    <!-- Header -->
+    <header class="bg-[#003366] text-white p-6 shadow-lg border-b-4 border-[#FFCC00] sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold"><i class="fas fa-bolt mr-2 text-[#FFCC00]"></i>Distancias RETIE</h1>
+            </div>
+            <div class="text-right">
+                <span class="bg-[#FFCC00] text-[#003366] px-2 py-1 rounded font-bold text-[10px]">VIGENTE</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 space-y-6">
+
+        <!-- Calculator Section -->
+        <section class="bg-white rounded-xl shadow-md p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- Controls -->
+            <div class="space-y-4">
+                <h2 class="text-lg font-bold text-[#003366] border-b pb-2">1. Configurar Escenario</h2>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">Nivel de Tensión</label>
+                    <select id="voltageLevel" class="w-full p-3 border border-gray-300 rounded bg-gray-50 focus:border-blue-500 focus:outline-none text-base" onchange="calculateSafety()">
+                        <option value="bt">Baja Tensión (< 1 kV)</option>
+                        <option value="mt13">Media Tensión (13.2 kV)</option>
+                        <option value="mt34">Media Tensión (34.5 kV)</option>
+                        <option value="mt57">Alta Tensión (57.5 kV)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">Tipo de Acercamiento</label>
+                    <select id="structureType" class="w-full p-3 border border-gray-300 rounded bg-gray-50 focus:border-blue-500 focus:outline-none text-base" onchange="calculateSafety()">
+                        <option value="fachada">Horizontal a Fachada</option>
+                        <option value="balcon">Horizontal a Balcón</option>
+                        <option value="techo">Vertical Sobre Techo</option>
+                    </select>
+                </div>
+
+                <div class="pt-2 border-t mt-4">
+                    <label class="block text-sm font-bold text-gray-800 mb-2">Distancia medida (m)</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="userDistance" step="0.1" class="w-full p-3 border border-gray-300 rounded text-center font-bold text-xl" placeholder="0.00" oninput="checkCompliance()">
+                        <div id="complianceBadge" class="w-1/3 flex items-center justify-center rounded font-bold text-white bg-gray-400 text-sm">
+                            -
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization -->
+            <div class="relative bg-sky-100 rounded-xl border-2 border-sky-200 overflow-hidden h-64 flex items-center justify-center shadow-inner">
+                
+                <!-- Background Context -->
+                <div class="absolute bottom-0 w-full h-12 bg-green-200 border-t-4 border-green-300"></div> 
+                
+                <!-- House -->
+                <div class="absolute bottom-12 left-6 w-32 h-40 bg-gray-100 border-2 border-gray-400 shadow-lg flex flex-col items-center justify-end">
+                    <div class="absolute -top-8 w-0 h-0 border-l-[70px] border-r-[70px] border-b-[32px] border-l-transparent border-r-transparent border-b-orange-700"></div>
+                    <div id="houseFeature" class="w-16 h-16 bg-blue-200 border-2 border-blue-400 mb-8 relative">
+                        <div class="absolute bottom-0 w-full h-1/2 border-t-2 border-blue-400 bg-blue-300 opacity-50"></div>
+                    </div>
+                </div>
+
+                <!-- Power Line Pole (Abstract) -->
+                <div class="absolute bottom-12 right-6 w-3 h-56 bg-gray-700"></div>
+                <div class="absolute top-16 right-4 w-10 h-1 bg-gray-800 rounded"></div> 
+
+                <!-- Conductors -->
+                <div class="absolute top-16 right-10 w-full h-1 bg-black cable-anim" style="width: 120px; right: 40px;"></div>
+                <div id="dangerZone" class="absolute top-14 right-14 rounded-full bg-red-500 opacity-20 transition-all duration-500" style="width: 50px; height: 50px; transform: translate(-50%, -50%);"></div>
+
+                <!-- Measurement Arrow -->
+                <div id="measureArrow" class="absolute bg-red-500 h-1 flex items-center justify-center text-white text-xs font-bold" style="top: 70px; left: 140px; width: 80px;">
+                    <span id="displayDistance" class="bg-red-600 px-1 rounded shadow text-[10px]">2.30m</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Install Prompt -->
+        <div id="installPrompt" class="hidden fixed bottom-4 left-4 right-4 bg-white p-4 rounded-lg shadow-2xl border border-gray-200 z-50 flex justify-between items-center">
+            <div>
+                <p class="font-bold text-[#003366]">Instalar App</p>
+                <p class="text-xs text-gray-500">Acceso rápido y sin internet</p>
+            </div>
+            <button onclick="installApp()" class="bg-[#003366] text-white px-4 py-2 rounded text-sm font-bold">Instalar</button>
+        </div>
+
+    </main>
+
+    <script>
+        // PWA Installation Logic
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installPrompt').classList.remove('hidden');
+        });
+
+        async function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    deferredPrompt = null;
+                }
+                document.getElementById('installPrompt').classList.add('hidden');
+            }
+        }
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('SW listo', reg))
+                    .catch(err => console.log('SW falló', err));
+            });
+        }
+
+        // --- CALCULATOR LOGIC ---
+        const retieData = {
+            'bt': { 'fachada': 1.70, 'balcon': 1.70, 'techo': 0.45 },
+            'mt13': { 'fachada': 2.30, 'balcon': 2.30, 'techo': 3.80 },
+            'mt34': { 'fachada': 2.50, 'balcon': 2.50, 'techo': 3.80 },
+            'mt57': { 'fachada': 2.50, 'balcon': 2.50, 'techo': 4.10 }
+        };
+
+        let requiredDistance = 1.70;
+
+        function calculateSafety() {
+            const voltage = document.getElementById('voltageLevel').value;
+            const structure = document.getElementById('structureType').value;
+            let dist = retieData[voltage][structure];
+            requiredDistance = dist;
+            document.getElementById('displayDistance').textContent = dist.toFixed(2) + " m";
+            updateVisuals(dist, structure);
+            checkCompliance();
+        }
+
+        function updateVisuals(dist, structure) {
+            const arrow = document.getElementById('measureArrow');
+            const zone = document.getElementById('dangerZone');
+            const feature = document.getElementById('houseFeature');
+            
+            feature.innerHTML = ''; 
+            if (structure === 'balcon') feature.innerHTML = '<div class="absolute bottom-0 w-full h-1/2 border-t-2 border-blue-400 bg-blue-300 opacity-50"></div> <div class="absolute -top-4 left-4 w-4 h-8 bg-orange-400 rounded-full"></div>';
+            
+            if (structure === 'techo') {
+                arrow.style.transform = "rotate(90deg)";
+                arrow.style.top = "40px";
+                arrow.style.left = "100px";
+            } else {
+                arrow.style.transform = "rotate(0deg)";
+                arrow.style.top = "70px";
+                arrow.style.left = "140px";
+                const newWidth = 60 + (dist * 15);
+                arrow.style.width = Math.min(newWidth, 120) + "px";
+            }
+            
+            const zoneSize = dist * 20;
+            zone.style.width = zoneSize + "px";
+            zone.style.height = zoneSize + "px";
+        }
+
+        function checkCompliance() {
+            const inputVal = parseFloat(document.getElementById('userDistance').value);
+            const badge = document.getElementById('complianceBadge');
+            
+            if (isNaN(inputVal)) {
+                badge.className = "w-1/3 flex items-center justify-center rounded font-bold text-white bg-gray-400 text-sm";
+                badge.textContent = "-";
+                return;
+            }
+
+            if (inputVal >= requiredDistance) {
+                badge.className = "w-1/3 flex items-center justify-center rounded font-bold text-white bg-green-600 shadow animate-pulse";
+                badge.innerHTML = '<i class="fas fa-check mr-1"></i> OK';
+            } else {
+                badge.className = "w-1/3 flex items-center justify-center rounded font-bold text-white bg-red-600 shadow animate-pulse";
+                badge.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i> NO';
+                if ("vibrate" in navigator) navigator.vibrate(200);
+            }
+        }
+
+        calculateSafety();
+    </script>
+</body>
+</html>
